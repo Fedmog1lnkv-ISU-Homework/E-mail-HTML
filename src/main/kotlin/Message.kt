@@ -6,45 +6,33 @@ data class Message(
     val content: String?,
     val date: String?
 ) {
-    fun toHTML(): String {
-        var template =
-            "<table style=\"font-family: Arial, sans-serif; border-collapse: collapse; width: 50%; margin: 20px;\">"
+    fun toHTML(): String = StringBuilder().apply {
+        append("<table style=\"font-family: Arial, sans-serif; border-collapse: collapse; width: 50%; margin: 20px;\">")
+        append(generateRow("Address", address))
+        append(generateRow("Date", date))
+        append(generateRow("Topic", topic))
+        append(generateRow("Content", content))
+        append("</table>")
+    }.toString()
 
-        template += generateRow("Address", address)
-        template += generateRow("Date", date)
-        template += generateRow("Topic", topic)
-        template += generateRow("Content", content)
+    private fun generateRow(label: String, value: String?): String =
+        value.takeIf { !it.isNullOrBlank() }?.run {
+            "<tr><td style=\"border: 1px solid #dddddd; text-align: left; padding: 8px;\">$label</td><td style=\"border: 1px solid #dddddd; text-align: left; padding: 8px;\">$this</td></tr>\n"
+        } ?: ""
 
-        template += "</table>"
-        return template
+    fun toTemplate(): String = run {
+        val html = toHTML()
+        File("template.html").readText().replace("{{content}}", html)
     }
 
-    private fun generateRow(label: String, value: String?): String {
-        return if (!value.isNullOrBlank()) {
-            "<tr><td style=\"border: 1px solid #dddddd; text-align: left; padding: 8px;\">$label</td><td style=\"border: 1px solid #dddddd; text-align: left; padding: 8px;\">$value</td></tr>\n"
-        } else {
-            ""
-        }
-    }
-
-
-    fun toTemplate(): String {
-        val html = this.toHTML()
-        val templateFile = File("template.html")
-        var template = templateFile.readText()
-        template = template.replace("{{content}}", html)
-        return template
-    }
-
-    fun toHtmlFile(filename: String): String {
+    fun toHtmlFile(filename: String): String = run {
         if (!filename.endsWith(".html", ignoreCase = true)) {
             throw IllegalArgumentException("Invalid file extension. File must have '.html' extension.")
         }
 
         val template = toTemplate()
-        val outputFile = File(filename)
-        outputFile.writeText(template)
-
-        return outputFile.absolutePath
+        File(filename).apply {
+            writeText(template)
+        }.absolutePath
     }
 }
